@@ -24,15 +24,13 @@ Shows:
 """
 
 import random
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from collections import deque
-
-random.seed(42)
-np.random.seed(42)
 
 from fast_er import er_fast
+from utils import component_sizes
 
 # ── Palette ───────────────────────────────────────────────────────────────────
 NAVY  = "#1A3A5C"
@@ -42,27 +40,6 @@ GOLD  = "#D97706"
 SLATE = "#64748B"
 LIGHT = "#F1F5F9"
 PURPLE = "#7C3AED"
-
-# ── BFS component sizes ───────────────────────────────────────────────────────
-def component_sizes(adj: list[list[int]]) -> list[int]:
-    """All component sizes via BFS."""
-    n       = len(adj)
-    visited = bytearray(n)
-    sizes   = []
-    for start in range(n):
-        if not visited[start]:
-            size  = 0
-            queue = deque([start])
-            visited[start] = 1
-            while queue:
-                v = queue.popleft()
-                size += 1
-                for u in adj[v]:
-                    if not visited[u]:
-                        visited[u] = 1
-                        queue.append(u)
-            sizes.append(size)
-    return sizes
 
 
 # ── Simulation parameters ─────────────────────────────────────────────────────

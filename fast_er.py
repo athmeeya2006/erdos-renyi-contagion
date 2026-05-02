@@ -89,7 +89,17 @@ def er_fast(n: int, p: float) -> list[list[int]]:
     -------
     adj : list[list[int]]
         Adjacency list. adj[v] = list of all neighbours of vertex v.
+
+    Raises
+    ------
+    ValueError
+        If n < 1 or p is outside [0, 1].
     """
+    if n < 1:
+        raise ValueError(f"Number of vertices must be >= 1, got n={n}")
+    if not 0.0 <= p <= 1.0:
+        raise ValueError(f"Edge probability must be in [0, 1], got p={p}")
+
     # Step 1: initialise empty adjacency list — O(n)
     adj = [[] for _ in range(n)]
 

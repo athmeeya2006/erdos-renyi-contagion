@@ -21,15 +21,13 @@ Shows:
 """
 
 import random
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from collections import deque
-
-random.seed(42)
-np.random.seed(42)
 
 from fast_er import er_fast
+from utils import giant_fraction, theoretical_S
 
 # ── Palette ───────────────────────────────────────────────────────────────────
 NAVY  = "#1A3A5C"
@@ -38,51 +36,6 @@ RED   = "#DC2626"
 GOLD  = "#D97706"
 SLATE = "#64748B"
 LIGHT = "#F1F5F9"
-
-# ── Connected components via BFS ──────────────────────────────────────────────
-def component_sizes(adj: list[list[int]]) -> list[int]:
-    """Return list of component sizes (unsorted) via BFS."""
-    n       = len(adj)
-    visited = bytearray(n)   # faster than list[bool] for large n
-    sizes   = []
-    for start in range(n):
-        if not visited[start]:
-            size  = 0
-            queue = deque([start])
-            visited[start] = 1
-            while queue:
-                v = queue.popleft()
-                size += 1
-                for u in adj[v]:
-                    if not visited[u]:
-                        visited[u] = 1
-                        queue.append(u)
-            sizes.append(size)
-    return sizes
-
-
-def giant_fraction(adj: list[list[int]]) -> float:
-    """Fraction of nodes in the largest connected component."""
-    n     = len(adj)
-    sizes = component_sizes(adj)
-    return max(sizes) / n if sizes else 0.0
-
-
-# ── Self-consistency equation solver ─────────────────────────────────────────
-def S_theory(lam: float, tol: float = 1e-12, max_iter: int = 2000) -> float:
-    """
-    Solve  S = 1 − exp(−λ·S)  by fixed-point iteration seeded at 0.5.
-    Returns 0 for λ ≤ 1 where the only fixed point is S = 0.
-    """
-    if lam <= 1.0:
-        return 0.0
-    S = 0.5
-    for _ in range(max_iter):
-        S_new = 1.0 - np.exp(-lam * S)
-        if abs(S_new - S) < tol:
-            return S_new
-        S = S_new
-    return S
 
 
 # ── Simulation parameters ─────────────────────────────────────────────────────

@@ -56,26 +56,22 @@ warnings.filterwarnings("ignore")
 np.random.seed(42)
 random.seed(42)
 
+from utils import (
+    z_score_and_pvalue,
+    format_pvalue,
+    er_clustering_prediction,
+    er_avg_path_length_prediction,
+    setup_dark_theme,
+    despine,
+    NAVY, TEAL, RED, GOLD, SLATE, LIGHT, PURPLE, GREEN, ROSE, BG, CARD, DIM,
+)
+
 # ── Output directory ─────────────────────────────────────────────────────────
 OUT = Path(".")
 
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 CACHED_PRICE_DATA = Path(os.environ.get("ERDOS_PRICE_DATA", DATA_DIR / "sp500_adj_close.csv"))
-
-# ── Palette (consistent with rest of repo) ───────────────────────────────────
-NAVY   = "#1A3A5C"
-TEAL   = "#0E7490"
-RED    = "#DC2626"
-GOLD   = "#D97706"
-SLATE  = "#64748B"
-LIGHT  = "#F1F5F9"
-PURPLE = "#7C3AED"
-GREEN  = "#059669"
-ROSE   = "#BE185D"
-BG     = "#020617"
-CARD   = "#0F172A"
-DIM    = "#334155"
 
 # ── Ticker universe: 5 GICS sectors, ~20 tickers each ───────────────────────
 # Deliberately avoid tickers that were recently delisted/renamed.
@@ -255,9 +251,8 @@ print(f"    γ    ≈ {gamma_real:.2f}  (degree-dist power-law exponent, if appl
 # ────────────────────────────────────────────────────────────────────────────
 p_er       = (2 * M) / (n * (n - 1))   # edge probability matching real density
 k_mean_er  = p_er * (n - 1)
-C_er       = p_er                      # theorem: C_ER = p
-# ER avg path length approximation: ln(n) / ln(⟨k⟩)
-L_er_pred  = math.log(n) / math.log(k_mean_er) if k_mean_er > 1 else float("nan")
+C_er       = er_clustering_prediction(n, M)
+L_er_pred  = er_avg_path_length_prediction(n, k_mean_er)
 assort_er  = 0.0                       # ER is uncorrelated → r ≈ 0
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -306,51 +301,39 @@ print(f"    Done! {elapsed_total:.1f}s total")
 # Remove NaN path lengths
 L_ens_clean = L_ensemble[~np.isnan(L_ensemble)]
 
-# ── Z-scores and p-values ────────────────────────────────────────────────────
-def z_p(val: float, ens: np.ndarray) -> tuple[float, float]:
-    mu, sigma = ens.mean(), ens.std(ddof=1)
-    if sigma == 0:
-        return float("inf"), 0.0
-    z = (val - mu) / sigma
-    pv = 2 * stats.norm.sf(abs(z))   # two-tailed
-    return z, pv
+# Note: z_score_and_pvalue imported from utils
 
 mu_C,  sigma_C  = C_ensemble.mean(),    C_ensemble.std(ddof=1)
 mu_L,  sigma_L  = L_ens_clean.mean(),   L_ens_clean.std(ddof=1)
 mu_r,  sigma_r  = r_ensemble.mean(),    r_ensemble.std(ddof=1)
 
-Z_C,  pv_C  = z_p(C_real,             C_ensemble)
-Z_L,  pv_L  = z_p(L_real,             L_ens_clean)
-Z_r,  pv_r  = z_p(assortativity_real, r_ensemble)
+Z_C,  pv_C  = z_score_and_pvalue(C_real,             C_ensemble)
+Z_L,  pv_L  = z_score_and_pvalue(L_real,             L_ens_clean)
+Z_r,  pv_r  = z_score_and_pvalue(assortativity_real, r_ensemble)
 
 print("\n" + "=" * 65)
 print("STATISTICAL RESULTS — NULL MODEL REJECTION")
 print("=" * 65)
 
-def fmt_pval(pv: float) -> str:
-    if pv < 1e-300:
-        return "< 1e-300 (effectively 0)"
-    if pv < 1e-4:
-        return f"{pv:.2e}"
-    return f"{pv:.4f}"
+# Note: format_pvalue imported from utils
 
 print(f"\n  Clustering Coefficient:")
 print(f"    Real network   C = {C_real:.5f}")
 print(f"    ER ensemble    μ = {mu_C:.5f},  σ = {sigma_C:.6f}")
 print(f"    Z-score          = {Z_C:+.1f} σ")
-print(f"    p-value          = {fmt_pval(pv_C)}")
+print(f"    p-value          = {format_pvalue(pv_C)}")
 
 print(f"\n  Average Path Length:")
 print(f"    Real network   L = {L_real:.4f}")
 print(f"    ER ensemble    μ = {mu_L:.4f},  σ = {sigma_L:.5f}")
 print(f"    Z-score          = {Z_L:+.2f} σ")
-print(f"    p-value          = {fmt_pval(pv_L)}")
+print(f"    p-value          = {format_pvalue(pv_L)}")
 
 print(f"\n  Degree Assortativity:")
 print(f"    Real network   r = {assortativity_real:+.4f}")
 print(f"    ER ensemble    μ = {mu_r:+.5f},  σ = {sigma_r:.5f}")
 print(f"    Z-score          = {Z_r:+.2f} σ")
-print(f"    p-value          = {fmt_pval(pv_r)}")
+print(f"    p-value          = {format_pvalue(pv_r)}")
 
 if abs(Z_C) > 5:
     print(f"\n  ✓ REJECT H₀: Clustering is {abs(Z_C):.0f}σ from ER — not random.")
@@ -589,7 +572,7 @@ ax_c1.fill_between(tail_x, tail_y, alpha=0.25, color=TEAL,
 ax_c1.set_xlabel("Clustering Coefficient  C", fontsize=12)
 ax_c1.set_ylabel("Density", fontsize=12)
 ax_c1.set_title(
-    f"Clustering: Z = {Z_C:+.0f}σ,  p = {fmt_pval(pv_C)}",
+    f"Clustering: Z = {Z_C:+.0f}σ,  p = {format_pvalue(pv_C)}",
     color=TEAL, fontsize=12,
 )
 ax_c1.legend(fontsize=9, framealpha=0.7)
@@ -624,7 +607,7 @@ ax_c2.plot(x_g2, y_g2, color=RED, lw=1.8, ls="--", label="Normal fit")
 ax_c2.set_xlabel("Degree Assortativity  r", fontsize=12)
 ax_c2.set_ylabel("Density", fontsize=12)
 ax_c2.set_title(
-    f"Assortativity: Z = {Z_r:+.1f}σ,  p = {fmt_pval(pv_r)}",
+    f"Assortativity: Z = {Z_r:+.1f}σ,  p = {format_pvalue(pv_r)}",
     color=GOLD, fontsize=12,
 )
 ax_c2.legend(fontsize=9, framealpha=0.7)
@@ -704,7 +687,7 @@ if len(tail_x2) > 0:
 ax2.set_xlabel("Clustering Coefficient  C", fontsize=11)
 ax2.set_ylabel("Density", fontsize=11)
 ax2.set_title(
-    f"Null Model  (Clustering)   p = {fmt_pval(pv_C)}",
+    f"Null Model  (Clustering)   p = {format_pvalue(pv_C)}",
     color=LIGHT, fontsize=12, fontweight="bold",
 )
 ax2.legend(fontsize=9, framealpha=0.5)

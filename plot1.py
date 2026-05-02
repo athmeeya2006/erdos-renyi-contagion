@@ -9,12 +9,16 @@ Shows:
     - The divergence makes the O(n²) vs O(n+M) gap visually undeniable
 """
 
-import random, math, time
+import random
+import math
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+
 from naive_er import er_naive
-from fast_er  import er_fast
+from fast_er import er_fast
 
 random.seed(42)
 np.random.seed(42)

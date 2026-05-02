@@ -61,20 +61,16 @@ SEED = 42
 np.random.seed(SEED)
 random.seed(SEED)
 
+from utils import (
+    z_score_and_pvalue,
+    format_pvalue,
+    setup_dark_theme,
+    despine,
+    NAVY, TEAL, RED, GOLD, SLATE, LIGHT, GREEN, BG, CARD, DIM,
+)
+
 # ── Output directory ─────────────────────────────────────────────────────────
 OUT = Path(".")
-
-# ── Palette ───────────────────────────────────────────────────────────────────
-BG    = "#020617"
-CARD  = "#0F172A"
-DIM   = "#334155"
-SLATE = "#64748B"
-LIGHT = "#F1F5F9"
-GOLD  = "#D97706"
-TEAL  = "#0E7490"
-RED   = "#DC2626"
-GREEN = "#059669"
-NAVY  = "#1A3A5C"
 
 # Colours for the 9 brain modules — maps to known network palette (Yeo / Power)
 MODULE_NAMES = [
@@ -455,8 +451,8 @@ k_mean  = brain_stats["k_mean"]
 
 # ER analytical predictions
 p_er    = 2 * M / (n * (n - 1))
-C_er    = p_er
-L_er    = math.log(n) / math.log(k_mean) if k_mean > 1 else float("nan")
+C_er    = er_clustering_prediction(n, M)
+L_er    = er_avg_path_length_prediction(n, k_mean)
 
 print(f"    ⟨k⟩  = {k_mean:.2f}")
 print(f"    C    = {C_real:.4f}   (ER: {C_er:.4f})")
@@ -497,18 +493,13 @@ for idx in range(N_ENS):
 print(f"    Done in {time.time()-t0:.1f}s")
 L_ens_clean = L_ens[~np.isnan(L_ens)]
 
-def _zp(val: float, ens: np.ndarray) -> tuple[float, float]:
-    mu, sig = ens.mean(), ens.std(ddof=1)
-    if sig == 0:
-        return float("inf"), 0.0
-    z = (val - mu) / sig
-    return z, float(2 * stats.norm.sf(abs(z)))
+# Note: z_score_and_pvalue imported from utils
 
 Z_C, pv_C = _zp(C_real, C_ens)
 Z_L, pv_L = _zp(L_real, L_ens_clean)
 Z_r, pv_r = _zp(r_real, r_ens)
 
-def _fp(pv: float) -> str:
+def format_pvalue(pv: float) -> str:
     if pv < 1e-300:
         return "< 1e-300"
     if pv < 1e-4:
@@ -518,9 +509,9 @@ def _fp(pv: float) -> str:
 print(f"\n{'='*65}")
 print("STATISTICAL REJECTION OF ER NULL HYPOTHESIS")
 print(f"{'='*65}")
-print(f"  Clustering  C = {C_real:.4f}   μ_ER={C_ens.mean():.4f}   Z={Z_C:+.1f}σ   p={_fp(pv_C)}")
-print(f"  Path length L = {L_real:.4f}   μ_ER={L_ens_clean.mean():.4f}   Z={Z_L:+.1f}σ   p={_fp(pv_L)}")
-print(f"  Assortativity r = {r_real:+.4f}   μ_ER={r_ens.mean():+.4f}   Z={Z_r:+.1f}σ   p={_fp(pv_r)}")
+print(f"  Clustering  C = {C_real:.4f}   μ_ER={C_ens.mean():.4f}   Z={Z_C:+.1f}σ   p={format_pvalue(pv_C)}")
+print(f"  Path length L = {L_real:.4f}   μ_ER={L_ens_clean.mean():.4f}   Z={Z_L:+.1f}σ   p={format_pvalue(pv_L)}")
+print(f"  Assortativity r = {r_real:+.4f}   μ_ER={r_ens.mean():+.4f}   Z={Z_r:+.1f}σ   p={format_pvalue(pv_r)}")
 print(f"{'='*65}")
 
 # ── Signal propagation ────────────────────────────────────────────────────────
@@ -811,7 +802,7 @@ for ax_e, ens, val_real, Z, pv, label, col in ens_configs:
     ax_e.set_xlabel(label, fontsize=11)
     ax_e.set_ylabel("Density", fontsize=11)
     ax_e.set_title(
-        f"Z = {Z:+.1f}σ   |   p = {_fp(pv)}",
+        f"Z = {Z:+.1f}σ   |   p = {format_pvalue(pv)}",
         color=col, fontsize=12,
     )
     ax_e.legend(fontsize=9, framealpha=0.65)
