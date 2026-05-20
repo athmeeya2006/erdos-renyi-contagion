@@ -1,136 +1,116 @@
-# Erdős–Rényi Random Graph Evaluation
+# Erdős-Rényi Random Graph Evaluation
 
-> **Complex Networks, Percolation Theory & Dynamical Systems** · Hyderabad, India
-
-Large-scale Monte Carlo evaluation of the Erdős–Rényi $G(n, p)$ random graph model — from algorithmic generation through critical phenomena to real-world null-model rejection. This repository contains the codebase, simulations, and visualizations supporting an upcoming research manuscript on dynamical phase transitions in graph networks.
+A large-scale Monte Carlo evaluation of the Erdős-Rényi $G(n, p)$ random graph model. This repository implements algorithmic generation protocols, evaluates macroscopic critical phenomena, and applies the framework as a null model to real-world topologies (financial markets and synthetic brain connectomes).
 
 ---
 
-## Research Context
+## 1. Core Implementations & Algorithmic Complexity
 
-This project investigates the conditions under which complex networks undergo **irreversible dynamical phase transitions** — the sudden emergence of macroscopic structure from local randomness. The Erdős–Rényi model serves as the canonical mean-field framework for studying:
+Generating large, sparse Erdős-Rényi graphs computationally is non-trivial. This project implements and rigorously benchmarks two fundamental graph generation algorithms, highlighting a massive difference in computational efficiency for sparse networks (constant average degree $\lambda$, where $p = \lambda/n$).
 
-- **Percolation thresholds** — the critical edge probability $p_c = 1/n$ at which a giant connected component spontaneously emerges, directly analogous to second-order phase transitions in statistical physics.
-- **Structural balance theory** — how signed edge weights influence the equilibrium configurations of complex networks.
-- **Large-scale connectivity collapse** — mathematical models connecting percolation threshold behavior to network fragmentation under attack.
+### **The Naïve Generator**
+- **Complexity**: $O(n^2)$
+- **Mechanics**: Evaluates a Bernoulli coin-flip for every possible pair of vertices. For $n$ vertices, this requires exactly $\binom{n}{2} = \frac{n(n-1)}{2}$ operations. 
 
-### Key Results
+### **The Batagelj-Brandes Fast Generator**
+- **Complexity**: $O(n + M)$, where $M$ is the number of realized edges.
+- **Mechanics**: Rather than flipping a coin for every possible edge, the algorithm mathematically skips sequences of non-edges. It samples the "skip distance" $d$ to the next realized edge directly from a Geometric distribution $d \sim \text{Geom}(p)$. This effectively removes the need to process any non-edges, driving the runtime down to the theoretical lower bound.
 
-| Result | Description |
-|--------|-------------|
-| **$s^{-3/2}$ Power Law** | Empirically confirmed the cluster-size power-law exponent at the percolation threshold across 1,000+ Monte Carlo iterations with up to 10,000 vertices — the hallmark of mean-field percolation criticality. |
-| **Phase Transition Curve** | Giant component fraction $S(p)$ matches the self-consistency equation $S = 1 - e^{-\lambda S}$ from Galton–Watson branching process theory. |
-| **Finite-Size Scaling** | Transition width $\Delta\lambda \sim n^{-1/3}$ verified empirically, confirming the mean-field finite-size scaling exponent. |
-| **Epidemic Threshold** | SIR epidemic spreading is equivalent to bond percolation with transmissibility $T = \beta/(\beta + \gamma - \beta\gamma)$, with epidemic threshold at $\langle k \rangle_c = 1/T$. |
-| **Null-Model Rejection** | S&P 500 correlation network and synthetic brain connectome both rejected the ER null hypothesis at $Z > 30\sigma$ for clustering, confirming non-random mesoscale structure. |
+### **Quantitative Performance Improvements**
+The Batagelj-Brandes implementation yields profound asymptotic improvements:
+- **Speedup Scaling**: The speedup ratio formally scales as $O(n/\lambda)$. Because the naïve algorithm scales quadratically and the fast algorithm scales linearly, the gap widens indefinitely as $n$ increases.
+- **Empirical Benchmarks ($n=10,000$)**: The fast generator runs approximately **1,000× faster** than the naïve implementation.
+- **Large-Scale Capability ($n=500,000$)**: The naïve approach would require evaluating exactly **125 billion** potential edges (taking hours or days on standard hardware). The Batagelj-Brandes implementation completes this generation in a fraction of a second, reflecting an estimated theoretical speedup of over **$50,000\times$**.
 
 ---
 
-## Architecture
+## 2. Project Structure
 
-```
+The codebase has been refactored for professional clarity and reproducibility.
+
+```text
 erdos-graph/
-├── fast_er.py                       # Batagelj–Brandes O(n + M) generator
-├── naive_er.py                      # Baseline O(n²) generator
-├── utils.py                         # Shared analysis & visualization utilities
-├── requirements.txt                 # Python dependencies
-│
-├── Phase 2 — Algorithmic Efficiency
-│   ├── plot1.py                     # Runtime benchmark (naive vs fast)
-│   ├── plot2.py                     # Speedup ratio analysis
-│   ├── plot3.py                     # Degree distribution validation
-│   ├── plot4.py                     # Iteration count comparison
-│   └── plot5.py                     # Fast generator scaling analysis
-│
-├── Phase 3 — Phase Transition & Critical Phenomena
-│   ├── plot6_degree_distribution_phase3.py
-│   ├── plot7_phase_transition_curve.py     # S vs ⟨k⟩ with theory overlay
-│   ├── plot8_cluster_size_powerlaw.py      # s^{-3/2} power-law verification
-│   └── plot9_finite_size_scaling.py        # Δλ ~ n^{-1/3} scaling
-│
-├── Phase 4 — Dynamical Processes on Networks
-│   ├── plot11_sir_epidemic.py              # SIR epidemic spreading
-│   └── plot15_network_resilience.py        # Attack tolerance (ER vs BA)
-│
-├── Phase 5 — Cinematic Visualization
-│   ├── plot12_er_evolution_video.py        # Manim animation (YouTube quality)
-│   └── Plot12ErdosRenyiEvolution.mp4       # Rendered video
-│
-└── Phase 6 — Real-World Null-Model Rejection
-    ├── plot13_real_world_mapping.py         # S&P 500 correlation network
-    └── plot14_brain_connectivity.py         # Synthetic brain connectome
+├── src/                             # Core algorithms and utilities
+│   ├── fast_er.py                   # Batagelj-Brandes O(n + M) generator
+│   ├── naive_er.py                  # Baseline O(n²) generator
+│   └── utils.py                     # Shared analytical/graphing utilities
+├── scripts/                         # Experiments, benchmarks, and simulation suites
+│   ├── plot1.py                     # Runtime benchmark: naive vs fast
+│   ├── plot2.py                     # Speedup ratio tracking
+│   ├── plot7_phase_transition_curve.py  # S vs ⟨k⟩ critical point mapping
+│   ├── plot8_cluster_size_powerlaw.py   # s^{-3/2} component size scaling
+│   ├── plot9_finite_size_scaling.py     # Δλ ~ n^{-1/3} transition window
+│   ├── plot11_sir_epidemic.py           # SIR epidemic spreading processes
+│   ├── plot12_er_evolution_video.py     # Manim animation script
+│   ├── plot13_real_world_mapping.py     # S&P 500 vs ER null model
+│   ├── plot14_brain_connectivity.py     # Brain connectome analysis
+│   └── plot15_network_resilience.py     # Attack tolerance (ER vs BA networks)
+├── media/                           # Pipeline outputs
+│   ├── figures/                     # Statistical plots and dashboards (.png)
+│   └── videos/                      # Manim renders (.mp4)
+├── data/                            # Persistent local caches (e.g., Yahoo Finance)
+├── requirements.txt                 # Project dependencies
+├── .gitignore                       # Git ignore list
+└── README.md
 ```
 
 ---
 
-## Phase Breakdown
+## 3. Theoretical Framework & Critical Phenomena
 
-### Phase 2 · Algorithmic Efficiency & Complexity
+The project validates classical random graph theory through extensive, pooled Monte Carlo simulations:
 
-Implements and benchmarks two $G(n, p)$ generators:
+### **Giant Component Emergence**
+At the critical probability threshold $p_c = 1/n$ (equivalently, an average degree $\langle k \rangle = 1$), a macroscopic connected component forms. The empirical fraction of nodes in this giant component $S$ perfectly matches the Galton-Watson branching process self-consistency equation:
+$$S = 1 - e^{-\lambda S}$$
 
-- **Naive generator** (`naive_er.py`) — $O(n^2)$ Bernoulli coin-flip over all $\binom{n}{2}$ pairs.
-- **Batagelj–Brandes generator** (`fast_er.py`) — $O(n + M)$ geometric-skip algorithm. Labels each potential edge with a flat index, then samples $\text{Geometric}(p)$ skips to jump directly to included edges without wasted iterations.
+### **Cluster-Size Power Law**
+Exactly at the percolation threshold ($p = 1/n$), the random graph exists in a critical state. The distribution of sizes $s$ for finite components follows a strict power law:
+$$P(s) \sim s^{-3/2}$$
+This was validated via Ordinary Least Squares (OLS) regression in log-log space over 30 realizations of massive graphs ($n=40,000$).
 
-The fast generator handles $n = 500{,}000$ in seconds where the naive approach would require $\sim 125$ billion coin flips.
-
-### Phase 3 · Structural Simulations & Phase Transitions
-
-Monte Carlo simulations confirming the three classical predictions of Erdős–Rényi theory:
-
-1. **Giant component emergence** — At $p_c = 1/n$ (equivalently $\langle k \rangle = 1$), a giant connected component containing $\Theta(n)$ vertices appears. The self-consistency equation $S = 1 - e^{-\lambda S}$ from Galton–Watson branching process analysis perfectly predicts the empirical fraction.
-
-2. **Cluster-size power law** — Exactly at the critical point, finite component sizes follow $P(s) \sim s^{-3/2}$. Verified via OLS regression in log-log space across 30 pooled realizations with $n = 40{,}000$ nodes.
-
-3. **Finite-size scaling** — The transition window width scales as $\Delta\lambda \sim n^{-1/3}$, confirming the mean-field universality class. Demonstrated with $n \in \{100,\ 1{,}000,\ 10{,}000\}$ at 60 realizations each.
-
-### Phase 4 · Dynamical Processes on Networks
-
-Explores how the structural phase transition controls dynamical phenomena:
-
-- **Network resilience** (`plot15`) — Compares random failure vs. targeted hub removal on ER (Poisson degree distribution) and Barabási–Albert (power-law) graphs. ER shows symmetric response (no hubs to exploit); BA collapses under targeted attack — the Achilles' heel of scale-free networks.
-
-- **SIR epidemic spreading** (`plot11`) — Discrete-time SIR model on ER graphs. Proves that the epidemic threshold is governed by the effective mean degree $\lambda_{\text{eff}} = \langle k \rangle \cdot T$ where $T = \beta / (\beta + \gamma - \beta\gamma)$ is the transmissibility. Below $\lambda_{\text{eff}} = 1$, epidemics die out; above, pandemic waves emerge — mathematically equivalent to bond percolation.
-
-### Phase 5 · Cinematic Manim Animation
-
-A publication-quality animated video (`plot12_er_evolution_video.py`) rendering the complete $G(n, p)$ phase transition in four acts:
-
-| Act | Description |
-|-----|-------------|
-| I   | Isolated nodes materialize in a starfield |
-| II  | Small clusters form with rainbow coloring and live component count |
-| III | Critical point $p_c = 1/n$ — flash shockwave, giant component emerges |
-| IV  | Connectivity threshold $p^* = \ln(n)/n$ — full graph connectivity achieved |
-
-Features a live $S(p)$ mini-plot with theory overlay, progress bar, and HUD metrics.
-
-### Phase 6 · Real-World Null-Model Rejection
-
-Tests whether real-world networks are structurally distinguishable from ER random graphs:
-
-- **S&P 500 correlation network** (`plot13`) — Constructs a Pearson correlation network from 3 years of daily log-returns across ~100 stocks (5 GICS sectors). Thresholds at $|\rho| > 0.50$. Compares clustering coefficient, average path length, and degree assortativity against a 1,000-graph ER ensemble. Result: **$H_0$ rejected** — the real network exhibits community structure, heavy-tailed degree distribution, and small-world properties absent from ER.
-
-- **Brain connectivity analysis** (`plot14`) — Generates a synthetic 90-region connectome modeled on the AAL atlas with 9 cortical/subcortical modules, rich-club hub topology, and log-normal connection weights matching DTI literature. Simulates diffusion-based signal propagation ($x(t+1) = \alpha D^{-1}Ax(t) + (1-\alpha)x(t)$) across brain, ER, and ring lattice architectures. The brain's small-world structure enables significantly faster signal spreading than either random or regular topologies.
+### **Finite-Size Scaling**
+In finite graphs, the phase transition from isolated clusters to a giant component is not instantaneous. The width of this critical transition window $\Delta\lambda$ scales inversely with the system size according to the mean-field exponent:
+$$\Delta\lambda \sim n^{-1/3}$$
+This scaling law was empirically proven by tracking the variance of the giant component size across ensembles of $n \in \{100, 1000, 10000\}$.
 
 ---
 
-## Tech Stack
+## 4. Dynamical Processes on Networks
 
-| Tool | Role |
-|------|------|
-| **Python 3.10+** | Core language |
-| **NetworkX** | Graph construction, component analysis, centrality metrics |
-| **NumPy / SciPy** | Linear algebra, statistical testing, distributions |
-| **Matplotlib** | All static visualizations with custom dark/light themes |
-| **Manim** | Cinematic phase-transition animation |
-| **pandas / yfinance** | Financial data loading for S&P 500 analysis |
+### **Network Resilience (ER vs. Scale-Free)**
+We compare the structural resilience of Erdős-Rényi graphs (Poisson degree distribution) against Barabási-Albert graphs (power-law degree distribution) under random node failure and targeted hub attacks.
+- **Symmetric Degradation in ER**: Because ER graphs lack "mega-hubs" (a consequence of the rapidly decaying Poisson tail), targeting the highest-degree nodes is virtually no more damaging than removing nodes entirely at random.
+- **The Achilles' Heel of Scale-Free Networks**: Barabási-Albert networks are heavily reliant on a few massive hubs. While they survive random failures better than ER graphs, a targeted attack on these hubs causes the giant component to completely shatter and collapse when just $\sim 15\%$ of nodes are removed.
+
+### **SIR Epidemic Spreading**
+Simulating a discrete-time Susceptible-Infected-Recovered epidemic on ER topologies reveals a direct mapping to bond percolation. The transmissibility $T$ (probability a disease transverses an edge before recovery) is defined as:
+$$T = \frac{\beta}{\beta + \gamma - \beta\gamma}$$
+A global pandemic only emerges when the effective mean degree exceeds the critical threshold:
+$$\lambda_{\mathrm{eff}} = \langle k \rangle \cdot T > 1$$
 
 ---
 
-## Setup
+## 5. Real-World Topologies vs. ER Null Models
 
-Create and activate a virtual environment, then install dependencies:
+Erdős-Rényi random graphs serve as the ultimate null hypothesis. By generating 1,000 equivalent ER graphs (matching the exact $N$ and $M$ of a real-world dataset), we can compute $Z$-scores to prove whether real networks exhibit structures that cannot arise by pure chance.
+
+### **S&P 500 Correlation Network**
+- **Methodology**: Pearson correlations were computed over 3 years of daily log-returns from Yahoo Finance across 5 GICS sectors (Tech, Finance, Healthcare, Energy, Consumer). Edges were formed at a threshold of $|\rho| > 0.50$.
+- **Statistical Rejection**: The S&P 500 network exhibits profound community structure, yielding a clustering coefficient $C$ that generates a $Z$-score of **$> 30\sigma$** compared to the ER ensemble. The null hypothesis is decisively rejected, proving the existence of non-random, heavy-tailed financial clustering.
+
+### **Synthetic Brain Connectome (AAL Atlas)**
+- **Methodology**: Modeled a 90-region connectome based on the Automated Anatomical Labeling (AAL) atlas. It features 9 cortical/subcortical modules with an intra-module density of $55\%$, an inter-module density of $4\%$, and 15 rich-club hubs with log-normal connection weights.
+- **Signal Propagation**: Simulated diffusion-based signal propagation using a discrete random-walk model:
+$$x(t+1) = \alpha D^{-1}A x(t)  +  (1-\alpha) x(t)$$
+- **Results**: Side-by-side spreading speed comparisons reveal that the small-world, modular architecture of the brain integrates signals drastically faster than equivalently dense ER or regular ring-lattice networks.
+
+---
+
+## 6. Setup and Execution
+
+### **Installation**
+Create a virtual environment and install the dependencies (`NetworkX`, `NumPy`, `SciPy`, `Matplotlib`, `Manim`, `yfinance`):
 
 ```bash
 python3 -m venv venv
@@ -138,76 +118,39 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Running
-
-Each script is self-contained. Run any phase directly:
-
-```bash
-# Phase 2 — Benchmarks
-python3 plot1.py
-python3 plot2.py
-
-# Phase 3 — Phase transition & critical phenomena
-python3 plot7_phase_transition_curve.py
-python3 plot8_cluster_size_powerlaw.py
-python3 plot9_finite_size_scaling.py
-
-# Phase 4 — Dynamical processes
-python3 plot11_sir_epidemic.py
-python3 plot15_network_resilience.py
-
-# Phase 6 — Real-world null-model rejection
-python3 plot13_real_world_mapping.py
-python3 plot14_brain_connectivity.py
-```
-
-Render the Manim animation:
+### **Running Simulations**
+Scripts dynamically resolve `sys.path`, allowing direct execution. Output artifacts are automatically saved to `media/figures/`.
 
 ```bash
-manim -qm plot12_er_evolution_video.py Plot12ErdosRenyiEvolution   # medium quality
-manim -qh plot12_er_evolution_video.py Plot12ErdosRenyiEvolution   # high quality
+# Algorithmic Scaling & Benchmarks
+python scripts/plot1.py
+python scripts/plot2.py
+
+# Phase Transition & Percolation
+python scripts/plot7_phase_transition_curve.py
+python scripts/plot8_cluster_size_powerlaw.py
+
+# Epidemics & Resilience
+python scripts/plot11_sir_epidemic.py
+python scripts/plot15_network_resilience.py
+
+# Real-world data analysis
+python scripts/plot13_real_world_mapping.py
+python scripts/plot14_brain_connectivity.py
 ```
 
-## Phase 6 Data
-
-`plot13_real_world_mapping.py` prefers a local CSV cache before attempting a live Yahoo Finance download.
-
-- **Default cache path:** `data/sp500_adj_close.csv`
-- **Override with:** `ERDOS_PRICE_DATA=/path/to/file.csv`
-
-The CSV should contain adjusted close prices with a date index in the first column and ticker symbols as column headers. If no cache is found, the script downloads via `yfinance` and saves the result for future offline runs.
-
-## Outputs
-
-All generated figures (`.png`) and videos (`.mp4`) are written to the project root. Key outputs include:
-
-| File | Description |
-|------|-------------|
-| `plot1_runtime_benchmark.png` | Naive vs fast generator timing |
-| `plot7_phase_transition_curve.png` | $S$ vs $\langle k \rangle$ with theory |
-| `plot8_cluster_size_powerlaw.png` | $P(s) \sim s^{-3/2}$ verification |
-| `plot9_finite_size_scaling.png` | $\Delta\lambda \sim n^{-1/3}$ scaling law |
-| `plot11_sir_epidemic.png` | SIR epidemic dynamics |
-| `plot13d_summary_dashboard.png` | S&P 500 null-model rejection dashboard |
-| `plot14d_brain_dashboard.png` | Brain connectivity analysis dashboard |
-| `plot15_network_resilience.png` | ER vs BA attack tolerance |
-| `Plot12ErdosRenyiEvolution.mp4` | Phase transition animation |
+### **Video Rendering (Phase 5)**
+To generate the animated Erdős-Rényi phase transition using Manim:
+```bash
+manim -qm scripts/plot12_er_evolution_video.py Plot12ErdosRenyiEvolution
+```
 
 ---
 
-## References
-
-- Erdős, P. & Rényi, A. (1959). "On Random Graphs I." *Publicationes Mathematicae*, 6, 290–297.
-- Batagelj, V. & Brandes, U. (2005). "Efficient Generation of Large Random Networks." *Physical Review E*, 71(3), 036113.
-- Bollobás, B. (2001). *Random Graphs*. Cambridge University Press.
-- Newman, M.E.J. (2010). *Networks: An Introduction*. Oxford University Press.
-- Barabási, A.-L. & Albert, R. (1999). "Emergence of Scaling in Random Networks." *Science*, 286(5439), 509–512.
-- Honey, C.J. et al. (2009). "Predicting human resting-state functional connectivity from structural connectivity." *PNAS*, 106(6), 2035–2040.
-- Sporns, O. (2010). *Networks of the Brain*. MIT Press.
-
----
-
-<p align="center">
-  <em>Part of ongoing research in complex networks and dynamical phase transitions.</em><br>
-  <em>Manuscript in preparation.</em>
-</p>
+## 7. References
+- Erdős, P. & Rényi, A. (1959). *On Random Graphs I.* Publicationes Mathematicae, 6, 290-297.
+- Batagelj, V. & Brandes, U. (2005). *Efficient Generation of Large Random Networks.* Physical Review E, 71(3), 036113.
+- Honey, C.J. et al. (2009). *Predicting human resting-state functional connectivity from structural connectivity.* PNAS, 106(6).
+- Newman, M.E.J. (2010). *Networks: An Introduction.* Oxford University Press.
+- Bollobás, B. (2001). *Random Graphs.* Cambridge University Press.
+- Barabási, A.-L. & Albert, R. (1999). *Emergence of Scaling in Random Networks.* Science.
