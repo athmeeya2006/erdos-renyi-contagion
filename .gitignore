@@ -34,11 +34,8 @@ env/
 
 # Data and Media
 data/
-media/
-*.mp4
-*.png
-*.csv
 
 # OS specific
 .DS_Store
 Thumbs.db
+
