@@ -75,7 +75,8 @@ from src.utils import (
 )
 
 # ── Output directory ─────────────────────────────────────────────────────────
-OUT = Path(".")
+OUT = Path(__file__).parent.parent / "media" / "figures"
+OUT.mkdir(parents=True, exist_ok=True)
 
 # Colours for the 9 brain modules — maps to known network palette (Yeo / Power)
 MODULE_NAMES = [
