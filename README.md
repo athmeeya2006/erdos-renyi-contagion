@@ -33,7 +33,9 @@ erdos-graph/
 ├── src/                             # Core algorithms and utilities
 │   ├── fast_er.py                   # Batagelj-Brandes O(n + M) generator
 │   ├── naive_er.py                  # Baseline O(n²) generator
-│   └── utils.py                     # Shared analytical/graphing utilities
+│   ├── utils.py                     # Shared analytical/graphing utilities
+│   ├── financial_network.py         # Bank balance sheet network models
+│   └── cascade.py                   # Financial contagion models
 ├── scripts/                         # Experiments, benchmarks, and simulation suites
 │   ├── plot1.py                     # Runtime benchmark: naive vs fast
 │   ├── plot2.py                     # Speedup ratio tracking
@@ -44,7 +46,8 @@ erdos-graph/
 │   ├── plot12_er_evolution_video.py     # Manim animation script
 │   ├── plot13_real_world_mapping.py     # S&P 500 vs ER null model
 │   ├── plot14_brain_connectivity.py     # Brain connectome analysis
-│   └── plot15_network_resilience.py     # Attack tolerance (ER vs BA networks)
+│   ├── plot15_network_resilience.py     # Attack tolerance (ER vs BA networks)
+│   └── plot16_financial_contagion.py    # Systemic risk and cascading failures
 ├── media/                           # Pipeline outputs
 │   ├── figures/                     # Statistical plots and dashboards (.png)
 │   └── videos/                      # Manim renders (.mp4)
@@ -88,6 +91,13 @@ Simulating a discrete-time Susceptible-Infected-Recovered epidemic on ER topolog
 $$T = \frac{\beta}{\beta + \gamma - \beta\gamma}$$
 A global pandemic only emerges when the effective mean degree exceeds the critical threshold:
 $$\lambda_{\mathrm{eff}} = \langle k \rangle \cdot T > 1$$
+
+### **Financial Contagion & Systemic Risk**
+We model interconnected financial institutions with dynamic balance sheets, tracking how counterparty default propagates across the interbank network. This extends the existing pure-structural resilience work by introducing actual economic models of contagion:
+- **`src/financial_network.py`**: Adds realistic node attributes. Each bank is initialized with a balance sheet containing assets, liabilities, and an equity buffer. Interbank exposures form the weighted edges of the network. This grounds the topological study in financial mechanics.
+- **`src/cascade.py`**: Implements three separate transmission protocols that improve upon the simple structural SIR mapping: Watts Threshold model, Economic DebtRank impact, and Bond Percolation cascades.
+- **Structural Bond Percolation**: Contagion threshold on Erdős-Rényi networks exactly matches the structural $1/\langle k \rangle$ percolation threshold. Below this, cascades are contained. Above it, a giant component of failed banks emerges.
+- **Too Connected to Fail**: On Barabási-Albert scale-free networks, the existence of mega-hubs lowers the effective contagion threshold. Using Watts threshold models and DebtRank algorithms, we demonstrate that scale-free interbank networks are intrinsically fragile, as systemic hubs carry disproportionate risk and collapse the entire system upon failure.
 
 ---
 
@@ -133,6 +143,7 @@ python scripts/plot8_cluster_size_powerlaw.py
 # Epidemics & Resilience
 python scripts/plot11_sir_epidemic.py
 python scripts/plot15_network_resilience.py
+python scripts/plot16_financial_contagion.py
 
 # Real-world data analysis
 python scripts/plot13_real_world_mapping.py

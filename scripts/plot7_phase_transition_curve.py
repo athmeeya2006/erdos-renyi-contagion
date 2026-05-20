@@ -62,7 +62,7 @@ for idx, lam in enumerate(LAM_VALS):
 
 # ── Theoretical curve ─────────────────────────────────────────────────────────
 lam_dense  = np.linspace(0.0, 3.0, 600)
-S_th_dense = np.array([S_theory(l) for l in lam_dense])
+S_th_dense = np.array([theoretical_S(l) for l in lam_dense])
 
 # ── Plot ──────────────────────────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(11, 7))

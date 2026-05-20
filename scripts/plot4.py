@@ -11,6 +11,7 @@ Shows:
     - Also shows a table of exact numbers at key n values
 """
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -108,7 +109,7 @@ for bar, val in zip(bars_f, table_fast):
 ax2.set_yticks(y_pos)
 ax2.set_yticklabels([f"n = {n:,}" for n in table_n], fontsize=10, color=SLATE)
 ax2.set_xlabel("Iterations required", fontsize=12, color=NAVY, labelpad=8)
-ax2.set_title(f"Exact Iteration Counts  (λ = {LAM})\nLog scale — red bars extend far off screen",
+ax2.set_title(f"Exact Iteration Counts  (λ = {LAM})\nLog scale",
               fontsize=12, color=NAVY, fontweight="bold", pad=12)
 ax2.set_xscale("log")
 ax2.legend(fontsize=10, framealpha=0.95, facecolor="white", edgecolor=SLATE)

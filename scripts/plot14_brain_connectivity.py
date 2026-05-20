@@ -67,6 +67,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from src.utils import (
     z_score_and_pvalue,
     format_pvalue,
+    er_clustering_prediction,
+    er_avg_path_length_prediction,
     setup_dark_theme,
     despine,
     NAVY, TEAL, RED, GOLD, SLATE, LIGHT, GREEN, BG, CARD, DIM,
@@ -498,9 +500,9 @@ L_ens_clean = L_ens[~np.isnan(L_ens)]
 
 # Note: z_score_and_pvalue imported from utils
 
-Z_C, pv_C = _zp(C_real, C_ens)
-Z_L, pv_L = _zp(L_real, L_ens_clean)
-Z_r, pv_r = _zp(r_real, r_ens)
+Z_C, pv_C = z_score_and_pvalue(C_real, C_ens)
+Z_L, pv_L = z_score_and_pvalue(L_real, L_ens_clean)
+Z_r, pv_r = z_score_and_pvalue(r_real, r_ens)
 
 def format_pvalue(pv: float) -> str:
     if pv < 1e-300:
