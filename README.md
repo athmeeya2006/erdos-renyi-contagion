@@ -92,12 +92,20 @@ $$T = \frac{\beta}{\beta + \gamma - \beta\gamma}$$
 A global pandemic only emerges when the effective mean degree exceeds the critical threshold:
 $$\lambda_{\mathrm{eff}} = \langle k \rangle \cdot T > 1$$
 
-### **Financial Contagion & Systemic Risk**
+### **Financial Contagion & Systemic Risk (`plot16_financial_contagion.py`)**
 We model interconnected financial institutions with dynamic balance sheets, tracking how counterparty default propagates across the interbank network. This extends the existing pure-structural resilience work by introducing actual economic models of contagion:
-- **`src/financial_network.py`**: Adds realistic node attributes. Each bank is initialized with a balance sheet containing assets, liabilities, and an equity buffer. Interbank exposures form the weighted edges of the network. This grounds the topological study in financial mechanics.
-- **`src/cascade.py`**: Implements three separate transmission protocols that improve upon the simple structural SIR mapping: Watts Threshold model, Economic DebtRank impact, and Bond Percolation cascades.
-- **Structural Bond Percolation**: Contagion threshold on Erdős-Rényi networks exactly matches the structural $1/\langle k \rangle$ percolation threshold. Below this, cascades are contained. Above it, a giant component of failed banks emerges.
-- **Too Connected to Fail**: On Barabási-Albert scale-free networks, the existence of mega-hubs lowers the effective contagion threshold. Using Watts threshold models and DebtRank algorithms, we demonstrate that scale-free interbank networks are intrinsically fragile, as systemic hubs carry disproportionate risk and collapse the entire system upon failure.
+
+- **`src/financial_network.py`**: Generates synthetic interbank networks (both Erdős-Rényi and Barabási-Albert). Each bank is initialized with a balance sheet containing assets, liabilities, and an equity buffer. Interbank exposures form the weighted edges of the network.
+- **`src/cascade.py`**: Implements three separate cascade transmission protocols that model different mechanisms of systemic failure:
+  1. **Bond Percolation Cascade**: A purely structural failure propagation mirroring the SIR epidemic model. Each exposure link survives failure with a transmissibility probability $T$.
+  2. **Watts Threshold Cascade (2002)**: A behavioral and balance-sheet threshold model. A node fails if the fraction of its failed neighbors exceeds a critical threshold $\phi$. 
+  3. **DebtRank (Battiston et al., 2012)**: An economic-value cascade model that measures the systemic importance of each institution based on how a shock to its equity propagates recursively through its creditors.
+
+**Empirical Results (Plot 16 Panels):**
+- **Panel A (Bond Percolation)**: The structural contagion threshold on Erdős-Rényi networks exactly matches the theoretical $T_c = 1/\langle k \rangle$. Below this threshold, cascades are strictly contained; above it, a giant component of failed banks emerges.
+- **Panel B (Threshold Cascades)**: Comparing ER against Barabási-Albert (BA) networks under the Watts threshold model reveals that BA scale-free networks collapse at a significantly lower failure threshold $\phi$. 
+- **Panel C (DebtRank vs. Degree)**: DebtRank analysis shows that "mega-hubs" in BA networks carry vastly disproportionate systemic risk compared to nodes in ER networks, quantitatively demonstrating the "Too Connected to Fail" paradigm.
+- **Panel D (Phase Diagram)**: A 2D heatmap tracking cascade size across two dimensions: Transmissibility $T$ and Equity Ratio. It clearly delineates the "safe" operating region from the systemic "crisis" region, proving that higher capital requirements (equity buffers) directly shift the critical phase transition boundary.
 
 ---
 
