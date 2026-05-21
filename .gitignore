@@ -32,10 +32,6 @@ env/
 .venv/
 .env/
 
-# Data and Media
-data/
-
 # OS specific
 .DS_Store
 Thumbs.db
-
